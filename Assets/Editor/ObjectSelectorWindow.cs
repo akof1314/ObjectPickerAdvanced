@@ -324,6 +324,7 @@ public class ObjectSelectorWindow : EditorWindow
                 {
                     current.Use();
                     Close();
+                    GUIUtility.ExitGUI();
                 }
             }
         }
