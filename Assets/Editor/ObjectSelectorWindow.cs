@@ -52,7 +52,6 @@ public class ObjectSelectorWindow : EditorWindow
     private Action<UnityEngine.Object> m_ItemSelectedCallback;
     private BuiltinRes m_NoneBuiltinRes;
     private bool m_ShowNoneItem;
-    private AudioClip m_AudioClip;
     private Vector2 m_ScrollPosition;
     private EditorCache m_EditorCache;
     private SerializedProperty m_CacheProperty;
@@ -187,13 +186,11 @@ public class ObjectSelectorWindow : EditorWindow
 
     private void OnDisable()
     {
-        AudioClipGUI.Clear();
         m_ItemSelectedCallback = null;
         m_CurrentBuiltinResources = null;
         m_ActiveBuiltinList = null;
         m_LastSelectedObject = null;
         m_LastSelectedObjectIcon = null;
-        m_AudioClip = null;
         if (s_SharedObjectSelector == this)
         {
             s_SharedObjectSelector = null;
@@ -574,16 +571,18 @@ public class ObjectSelectorWindow : EditorWindow
             }
             m_LastSelectedObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(m_ActiveBuiltinList[selectedIdx].path);
             m_LastSelectedObjectIcon = AssetPreview.GetAssetPreview(m_LastSelectedObject);
+
+            if (m_EditorCache != null && m_LastSelectedObject)
+            {
+                m_EditorCache.CleanupUntouchedEditors();
+                EditorWrapper editorWrapper = m_EditorCache[m_LastSelectedObject];
+                if (editorWrapper != null)
+                {
+                }
+            }
         }
         Rect r = ListItemCalcRect(selectedIdx);
         ScrollToPosition(AdjustRectForFraming(r));
-
-        m_AudioClip = null;
-        if (m_LastSelectedObject)
-        {
-            m_AudioClip = m_LastSelectedObject as AudioClip;
-        }
-
         Repaint();
 
         if (callback && m_ItemSelectedCallback != null)
@@ -768,21 +767,5 @@ public class ObjectSelectorWindow : EditorWindow
             num++;
         }
         return -1;
-    }
-
-    private void DrawPreviewTool()
-    {
-        DrawPreviewToolAudioClip();
-    }
-
-    private void DrawPreviewToolAudioClip()
-    {
-        if (!m_AudioClip)
-        {
-            AudioClipGUI.Clear();
-            return;
-        }
-        Rect rect = new Rect(m_PreviewSize + 3f, position.height - 22f, 24f, 16f);
-        AudioClipGUI.OnGUI(rect, m_AudioClip);
     }
 }

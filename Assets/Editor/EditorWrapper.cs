@@ -18,7 +18,23 @@ namespace UnityEditor
 		private EditorWrapper()
 		{
 		}
-		public bool HasPreviewGUI()
+        public void OnEnable()
+        {
+            MethodInfo method = editor.GetType().GetMethod("OnEnable", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (method != null)
+            {
+                method.Invoke(editor, null);
+            }
+        }
+        public void OnDisable()
+        {
+            MethodInfo method = editor.GetType().GetMethod("OnDisable", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (method != null)
+            {
+                method.Invoke(editor, null);
+            }
+        }
+        public bool HasPreviewGUI()
 		{
 			return editor.HasPreviewGUI();
 		}
