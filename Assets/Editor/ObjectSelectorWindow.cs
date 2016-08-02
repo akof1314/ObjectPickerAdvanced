@@ -26,6 +26,8 @@ public class ObjectSelectorWindow : EditorWindow
         public GUIStyle previewBg = "ProjectBrowserPreviewBg";
 
         public GUIStyle preButton = "preButton";
+        public GUIStyle preToolbar = "preToolbar";
+        public GUIStyle dragHandle = "RL DragHandle";
     }
 
     private class BuiltinRes
@@ -37,7 +39,7 @@ public class ObjectSelectorWindow : EditorWindow
 
     private Styles m_Styles;
     private float m_ToolbarHeight = 44f;
-    private float m_PreviewSize = 85f;
+    private float m_PreviewSize = 101f;
     private float m_TopSize;
     private string m_SearchFilter;
     private bool m_FocusSearchFilter;
@@ -54,6 +56,8 @@ public class ObjectSelectorWindow : EditorWindow
     private Vector2 m_ScrollPosition;
     private EditorCache m_EditorCache;
     private SerializedProperty m_CacheProperty;
+    [SerializeField]
+    private PreviewResizer m_PreviewResizer = new PreviewResizer();
     private static ObjectSelectorWindow s_SharedObjectSelector;
 
     public static ObjectSelectorWindow get
@@ -175,6 +179,12 @@ public class ObjectSelectorWindow : EditorWindow
         m_CurrentBuiltinResources = m_ActiveBuiltinList = builtinResList.ToArray();
     }
 
+    private void OnEnable()
+    {
+        m_PreviewResizer.Init("ObjectSelectorWindow");
+        m_PreviewSize = m_PreviewResizer.GetPreviewSize();
+    }
+
     private void OnDisable()
     {
         AudioClipGUI.Clear();
@@ -188,9 +198,9 @@ public class ObjectSelectorWindow : EditorWindow
         {
             s_SharedObjectSelector = null;
         }
-        if (this.m_EditorCache != null)
+        if (m_EditorCache != null)
         {
-            this.m_EditorCache.Dispose();
+            m_EditorCache.Dispose();
         }
     }
 
@@ -381,16 +391,16 @@ public class ObjectSelectorWindow : EditorWindow
     {
         GUI.Box(new Rect(0f, m_TopSize, position.width, m_PreviewSize), string.Empty, m_Styles.previewBackground);
 
-        if (this.m_EditorCache == null)
+        if (m_EditorCache == null)
         {
-            this.m_EditorCache = new EditorCache(EditorFeatures.PreviewGUI);
+            m_EditorCache = new EditorCache(EditorFeatures.PreviewGUI);
         }
         UnityEngine.Object currentObject = m_LastSelectedObject;
         EditorWrapper editorWrapper = null;
         string text;
         if (currentObject != null)
         {
-            editorWrapper = this.m_EditorCache[currentObject];
+            editorWrapper = m_EditorCache[currentObject];
             string text2 = ObjectNames.NicifyVariableName(currentObject.GetType().Name);
 
             {
@@ -403,13 +413,46 @@ public class ObjectSelectorWindow : EditorWindow
             text = "None";
         }
 
+        float toolbarHeight = 16f;
+        float previewSize = m_PreviewSize - toolbarHeight;
         float num = 5f;
-        Rect rect2 = new Rect(num, m_TopSize + num, m_PreviewSize - num * 2f, m_PreviewSize - num * 2f);
-        Rect rect = new Rect(m_PreviewSize + 3f, m_TopSize + (m_PreviewSize - 75f) * 0.5f, position.width - m_PreviewSize - 3f - num, 75f);
+        Rect rect2 = new Rect(num, m_TopSize + num + toolbarHeight, previewSize - num * 2f, previewSize - num * 2f);
+        Rect rect = new Rect(previewSize + 3f, m_TopSize + (previewSize - 75f) * 0.5f + toolbarHeight, position.width - previewSize - 3f - num, 75f);
 
         if (editorWrapper != null && editorWrapper.HasPreviewGUI())
         {
-            editorWrapper.OnPreviewGUI(rect2, this.m_Styles.previewTextureBackground);
+            Rect rect3 = new Rect(0f, m_TopSize, position.width, 16f);
+            GUI.BeginGroup(rect3);
+            Rect rect4 = EditorGUILayout.BeginHorizontal(m_Styles.preToolbar, GUILayout.Height(17f));
+
+            if (m_PreviewResizer.GetExpandedBeforeDragging())
+            {
+                editorWrapper.OnPreviewSettings();
+            }
+            GUILayout.FlexibleSpace();
+
+            Rect lastRect = GUILayoutUtility.GetLastRect();
+            Rect rect5 = rect4;
+            rect5.x = lastRect.x;
+            rect5.y = rect5.y + (17f - m_Styles.dragHandle.fixedHeight) / 2f + 1f;
+            rect5.height = m_Styles.dragHandle.fixedHeight;
+            rect5.width = lastRect.width;
+            if (Event.current.type == EventType.Repaint)
+            {
+                m_Styles.dragHandle.Draw(rect5, GUIContent.none, false, false, false, false);
+            }
+
+            EditorGUILayout.EndHorizontal();
+            GUI.EndGroup();
+
+            m_PreviewSize = this.m_PreviewResizer.ResizeHandle(base.position, 101f, 270f, 20f, lastRect);
+            this.m_TopSize = base.position.height - this.m_PreviewSize;
+            if (!this.m_PreviewResizer.GetExpanded())
+            {
+                return;
+            }
+
+            editorWrapper.OnInteractivePreviewGUI(rect2, m_Styles.previewTextureBackground);
         }
         else
         {
@@ -423,8 +466,8 @@ public class ObjectSelectorWindow : EditorWindow
         {
             GUI.Label(rect, text, m_Styles.smallStatus);
         }
-        DrawPreviewTool();
-		this.m_EditorCache.CleanupUntouchedEditors();
+        //DrawPreviewTool();
+		m_EditorCache.CleanupUntouchedEditors();
     }
 
     private void HandleKeyboard()
