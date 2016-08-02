@@ -52,6 +52,8 @@ public class ObjectSelectorWindow : EditorWindow
     private bool m_ShowNoneItem;
     private AudioClip m_AudioClip;
     private Vector2 m_ScrollPosition;
+    private EditorCache m_EditorCache;
+    private SerializedProperty m_CacheProperty;
     private static ObjectSelectorWindow s_SharedObjectSelector;
 
     public static ObjectSelectorWindow get
@@ -113,10 +115,15 @@ public class ObjectSelectorWindow : EditorWindow
     public static void ShowObjectPicker<T>(UnityEngine.Object obj, Action<UnityEngine.Object> itemSelectedCallback, string folderPath = "Assets") where T : UnityEngine.Object
     {
         Type typeFromHandle = typeof(T);
-        get.Show(obj, typeFromHandle, itemSelectedCallback, folderPath);
+        get.Show(obj, typeFromHandle, null, itemSelectedCallback, folderPath);
     }
 
-    public void Show(UnityEngine.Object obj, Type requiredType, Action<UnityEngine.Object> itemSelectedCallback, string folderPath)
+    public static void ShowObjectPicker(SerializedProperty property, Action<UnityEngine.Object> itemSelectedCallback, string folderPath = "Assets")
+    {
+        get.Show(null, null, property, itemSelectedCallback, folderPath);
+    }
+
+    public void Show(UnityEngine.Object obj, Type requiredType, SerializedProperty property, Action<UnityEngine.Object> itemSelectedCallback, string folderPath)
     {
         m_FolderPath = folderPath;
         if (!Directory.Exists(folderFullPath))
@@ -124,10 +131,21 @@ public class ObjectSelectorWindow : EditorWindow
             Debug.LogError(folderPath + " is not a Directory!");
             return;
         }
+        m_CacheProperty = property;
         m_ItemSelectedCallback = itemSelectedCallback;
         InitIfNeeded();
-        InitBuiltinList(requiredType);
-        titleContent = new GUIContent("Select " + requiredType.Name);
+        string requiredTypeName = string.Empty;
+        if (property != null)
+        {
+            obj = property.objectReferenceValue;
+            requiredTypeName = property.objectReferenceValue.GetType().Name;
+        }
+        else
+        {
+            requiredTypeName = requiredType.Name;
+        }
+        InitBuiltinList(requiredTypeName);
+        titleContent = new GUIContent("Select " + requiredTypeName);
         m_FocusSearchFilter = true;
         m_ShowNoneItem = true;
         m_SearchFilter = String.Empty;
@@ -139,11 +157,11 @@ public class ObjectSelectorWindow : EditorWindow
     /// 初始化所指定的文件夹路径里的对象列表
     /// </summary>
     /// <param name="requiredType"></param>
-    private void InitBuiltinList(Type requiredType)
+    private void InitBuiltinList(string requiredTypeName)
     {
         int lenFolderPath = m_FolderPath.Length + 1;
         List<BuiltinRes> builtinResList = new List<BuiltinRes>();
-        string[] guids = AssetDatabase.FindAssets("t:" + requiredType.Name, new[] { m_FolderPath });
+        string[] guids = AssetDatabase.FindAssets("t:" + requiredTypeName, new[] { m_FolderPath });
         foreach (var guid in guids)
         {
             BuiltinRes builtinRes = new BuiltinRes();
@@ -169,6 +187,10 @@ public class ObjectSelectorWindow : EditorWindow
         if (s_SharedObjectSelector == this)
         {
             s_SharedObjectSelector = null;
+        }
+        if (this.m_EditorCache != null)
+        {
+            this.m_EditorCache.Dispose();
         }
     }
 
@@ -238,7 +260,6 @@ public class ObjectSelectorWindow : EditorWindow
             EditorGUI.FocusTextInControl("SearchFilter");
             m_FocusSearchFilter = false;
         }
-        GUI.changed = false;
 
         GUILayout.BeginArea(new Rect(0f, 26f, position.width, m_ToolbarHeight - 26f));
         GUILayout.BeginHorizontal();
@@ -360,10 +381,16 @@ public class ObjectSelectorWindow : EditorWindow
     {
         GUI.Box(new Rect(0f, m_TopSize, position.width, m_PreviewSize), string.Empty, m_Styles.previewBackground);
 
+        if (this.m_EditorCache == null)
+        {
+            this.m_EditorCache = new EditorCache(EditorFeatures.PreviewGUI);
+        }
         UnityEngine.Object currentObject = m_LastSelectedObject;
+        EditorWrapper editorWrapper = null;
         string text;
         if (currentObject != null)
         {
+            editorWrapper = this.m_EditorCache[currentObject];
             string text2 = ObjectNames.NicifyVariableName(currentObject.GetType().Name);
 
             {
@@ -380,7 +407,14 @@ public class ObjectSelectorWindow : EditorWindow
         Rect rect2 = new Rect(num, m_TopSize + num, m_PreviewSize - num * 2f, m_PreviewSize - num * 2f);
         Rect rect = new Rect(m_PreviewSize + 3f, m_TopSize + (m_PreviewSize - 75f) * 0.5f, position.width - m_PreviewSize - 3f - num, 75f);
 
-        DrawObjectIcon(rect2, m_LastSelectedObjectIcon);
+        if (editorWrapper != null && editorWrapper.HasPreviewGUI())
+        {
+            editorWrapper.OnPreviewGUI(rect2, this.m_Styles.previewTextureBackground);
+        }
+        else
+        {
+            DrawObjectIcon(rect2, m_LastSelectedObjectIcon);
+        }
         if (EditorGUIUtility.isProSkin)
         {
             EditorGUI.DropShadowLabel(rect, text, m_Styles.smallStatus);
@@ -390,6 +424,7 @@ public class ObjectSelectorWindow : EditorWindow
             GUI.Label(rect, text, m_Styles.smallStatus);
         }
         DrawPreviewTool();
+		this.m_EditorCache.CleanupUntouchedEditors();
     }
 
     private void HandleKeyboard()
@@ -455,6 +490,11 @@ public class ObjectSelectorWindow : EditorWindow
         if (callback && m_ItemSelectedCallback != null)
         {
             m_ItemSelectedCallback(m_LastSelectedObject);
+        }
+        else if (callback && m_CacheProperty != null)
+        {
+            m_CacheProperty.objectReferenceValue = m_LastSelectedObject;
+            m_CacheProperty.serializedObject.ApplyModifiedProperties();
         }
     }
 

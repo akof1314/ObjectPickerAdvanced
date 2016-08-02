@@ -26,7 +26,12 @@ public class TestInspector : Editor
     public override void OnInspectorGUI()
     {
         targetObj.Update();
+
+        EditorGUILayout.BeginHorizontal();
         EditorGUILayout.PropertyField(person);
+        EditorGUIUtil.ObjectPickerField(person);
+        EditorGUILayout.EndHorizontal();
+
         EditorGUILayout.PropertyField(person2);
         EditorGUILayout.PropertyField(person3);
         if (GUILayout.Button("选择对象"))

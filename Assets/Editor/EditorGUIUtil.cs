@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -18,5 +18,14 @@ public class EditorGUIUtil
             GUIUtility.keyboardControl = 0;
         }
         return text;
+    }
+
+    public static bool ObjectPickerField(SerializedProperty property, Action<UnityEngine.Object> itemSelectedCallback = null, string folderPath = "Assets")
+    {
+        if (GUILayout.Button("C", EditorStyles.miniButton, GUILayout.Width(24f)))
+        {
+            ObjectSelectorWindow.ShowObjectPicker(property, itemSelectedCallback, folderPath);
+        }
+        return true;
     }
 }
