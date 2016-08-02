@@ -246,9 +246,9 @@ public class ObjectSelectorWindow : EditorWindow
         GUI.EndGroup();
 
         GUI.Label(new Rect(base.position.width * 0.5f - 16f,
-            base.position.height - this.m_PreviewSize + 2f, 32f,
-            this.m_Styles.bottomResize.fixedHeight),
-            GUIContent.none, this.m_Styles.bottomResize);
+            base.position.height - m_PreviewSize + 2f, 32f,
+            m_Styles.bottomResize.fixedHeight),
+            GUIContent.none, m_Styles.bottomResize);
     }
 
     private void SearchArea()
@@ -404,12 +404,12 @@ public class ObjectSelectorWindow : EditorWindow
         UnityEngine.Object currentObject = m_LastSelectedObject;
         EditorWrapper editorWrapper = null;
 
-        if (this.m_PreviewSize < 75f)
+        if (m_PreviewSize < 75f)
         {
             string text;
             if (currentObject != null)
             {
-                editorWrapper = this.m_EditorCache[currentObject];
+                editorWrapper = m_EditorCache[currentObject];
                 string str = ObjectNames.NicifyVariableName(currentObject.GetType().Name);
                 if (editorWrapper != null)
                 {
@@ -425,18 +425,18 @@ public class ObjectSelectorWindow : EditorWindow
             {
                 text = "None";
             }
-            this.LinePreview(text, currentObject, editorWrapper);
+            LinePreview(text, currentObject, editorWrapper);
         }
         else
         {
             string text3;
             if (currentObject != null)
             {
-                editorWrapper = this.m_EditorCache[currentObject];
+                editorWrapper = m_EditorCache[currentObject];
                 string text2 = ObjectNames.NicifyVariableName(currentObject.GetType().Name);
                 if (editorWrapper != null)
                 {
-                    text3 = editorWrapper.GetInfoString();
+                    text3 = editorWrapper.GetInfoString().Replace("\n", "  ");
                     if (text3 != string.Empty)
                     {
                         text3 = string.Concat(new string[]
@@ -463,130 +463,67 @@ public class ObjectSelectorWindow : EditorWindow
             {
                 text3 = "None";
             }
-            this.WidePreview(this.m_PreviewSize, text3, currentObject, editorWrapper);
-            this.m_EditorCache.CleanupUntouchedEditors();
+            WidePreview(m_PreviewSize, text3, currentObject, editorWrapper);
+            m_EditorCache.CleanupUntouchedEditors();
         }
-
-  //      string text;
-  //      if (currentObject != null)
-  //      {
-  //          editorWrapper = m_EditorCache[currentObject];
-  //          string text2 = ObjectNames.NicifyVariableName(currentObject.GetType().Name);
-
-  //          {
-  //              text = currentObject.name + "\n" + text2;
-  //          }
-  //          text = text + "\n" + AssetDatabase.GetAssetPath(currentObject);
-  //      }
-  //      else
-  //      {
-  //          text = "None";
-  //      }
-
-  //      float toolbarHeight = 16f;
-  //      float previewSize = m_PreviewSize - toolbarHeight;
-  //      float num = 5f;
-  //      Rect rect2 = new Rect(num, m_TopSize + num + toolbarHeight, previewSize - num * 2f, previewSize - num * 2f);
-  //      Rect rect = new Rect(previewSize + 3f, m_TopSize + (previewSize - 75f) * 0.5f + toolbarHeight, position.width - previewSize - 3f - num, 75f);
-
-  //      if (editorWrapper != null && editorWrapper.HasPreviewGUI())
-  //      {
-  //          Rect rect3 = new Rect(0f, m_TopSize, position.width, 16f);
-  //          GUI.BeginGroup(rect3);
-  //          Rect rect4 = EditorGUILayout.BeginHorizontal(m_Styles.preToolbar, GUILayout.Height(17f));
-
-  //          if (m_PreviewResizer.GetExpandedBeforeDragging())
-  //          {
-  //              editorWrapper.OnPreviewSettings();
-  //          }
-  //          GUILayout.FlexibleSpace();
-
-  //          Rect lastRect = GUILayoutUtility.GetLastRect();
-  //          Rect rect5 = rect4;
-  //          rect5.x = lastRect.x;
-  //          rect5.y = rect5.y + (17f - m_Styles.dragHandle.fixedHeight) / 2f + 1f;
-  //          rect5.height = m_Styles.dragHandle.fixedHeight;
-  //          rect5.width = lastRect.width;
-  //          if (Event.current.type == EventType.Repaint)
-  //          {
-  //              m_Styles.dragHandle.Draw(rect5, GUIContent.none, false, false, false, false);
-  //          }
-
-  //          EditorGUILayout.EndHorizontal();
-  //          GUI.EndGroup();
-
-  //          m_PreviewSize = this.m_PreviewResizer.ResizeHandle(base.position, 101f, 270f, 20f, lastRect);
-  //          this.m_TopSize = base.position.height - this.m_PreviewSize;
-  //          if (!this.m_PreviewResizer.GetExpanded())
-  //          {
-  //              return;
-  //          }
-
-  //          editorWrapper.OnInteractivePreviewGUI(rect2, m_Styles.previewTextureBackground);
-  //      }
-  //      else
-  //      {
-  //          DrawObjectIcon(rect2, m_LastSelectedObjectIcon);
-  //      }
-  //      if (EditorGUIUtility.isProSkin)
-  //      {
-  //          EditorGUI.DropShadowLabel(rect, text, m_Styles.smallStatus);
-  //      }
-  //      else
-  //      {
-  //          GUI.Label(rect, text, m_Styles.smallStatus);
-  //      }
-		//m_EditorCache.CleanupUntouchedEditors();
     }
 
     private void LinePreview(string s, UnityEngine.Object o, EditorWrapper p)
     {
         if (m_LastSelectedObjectIcon != null)
         {
-            GUI.DrawTexture(new Rect(2f, (float)((int)(this.m_TopSize + 2f)), 16f, 16f), m_LastSelectedObjectIcon, ScaleMode.StretchToFill);
+            GUI.DrawTexture(new Rect(2f, (float)((int)(m_TopSize + 2f)), 16f, 16f), m_LastSelectedObjectIcon, ScaleMode.StretchToFill);
         }
-        Rect position = new Rect(20f, this.m_TopSize + 1f, base.position.width - 22f, 18f);
+        Rect position = new Rect(20f, m_TopSize + 1f, base.position.width - 22f, 18f);
         if (EditorGUIUtility.isProSkin)
         {
-            EditorGUI.DropShadowLabel(position, s, this.m_Styles.smallStatus);
+            EditorGUI.DropShadowLabel(position, s, m_Styles.smallStatus);
         }
         else
         {
-            GUI.Label(position, s, this.m_Styles.smallStatus);
+            GUI.Label(position, s, m_Styles.smallStatus);
         }
     }
 
     private void WidePreview(float actualSize, string s, UnityEngine.Object o, EditorWrapper p)
     {
         float num = 5f;
-        Rect position = new Rect(num, this.m_TopSize + num, actualSize - num * 2f, actualSize - num * 2f);
-        Rect position2 = new Rect(this.m_PreviewSize + 3f, this.m_TopSize + (this.m_PreviewSize - 75f) * 0.5f, base.position.width - this.m_PreviewSize - 3f - num, 75f);
+        Rect position = new Rect(num, m_TopSize + num, actualSize - num * 2f, actualSize - num * 2f);
+        Rect position2 = new Rect(m_PreviewSize + 3f, m_TopSize + (m_PreviewSize - 75f) * 0.5f, base.position.width - m_PreviewSize - 3f - num, 75f);
         if (p != null && p.HasPreviewGUI())
         {
-            p.OnPreviewGUI(position, this.m_Styles.previewTextureBackground);
+            p.OnInteractivePreviewGUI(position, m_Styles.previewTextureBackground);
+
+            Rect rect = new Rect(m_PreviewSize + 3f, base.position.height - 22f, base.position.width, 16f);
+            GUI.BeginGroup(rect);
+            EditorGUILayout.BeginHorizontal(GUIStyle.none, GUILayout.Height(17f));
+            p.OnPreviewSettings();
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            GUI.EndGroup();
         }
         else
         {
             if (o != null)
             {
-                this.DrawObjectIcon(position, m_LastSelectedObjectIcon);
+                DrawObjectIcon(position, m_LastSelectedObjectIcon);
             }
         }
         if (EditorGUIUtility.isProSkin)
         {
-            EditorGUI.DropShadowLabel(position2, s, this.m_Styles.smallStatus);
+            EditorGUI.DropShadowLabel(position2, s, m_Styles.smallStatus);
         }
         else
         {
-            GUI.Label(position2, s, this.m_Styles.smallStatus);
+            GUI.Label(position2, s, m_Styles.smallStatus);
         }
     }
 
     private void ResizeBottomPartOfWindow()
     {
         GUI.changed = false;
-        this.m_PreviewSize = this.m_PreviewResizer.ResizeHandle(base.position, 65f, 270f, 20f) + 20f;
-        this.m_TopSize = base.position.height - this.m_PreviewSize;
+        m_PreviewSize = m_PreviewResizer.ResizeHandle(base.position, 65f, 270f, 20f) + 20f;
+        m_TopSize = base.position.height - m_PreviewSize;
     }
 
     private void HandleKeyboard()
