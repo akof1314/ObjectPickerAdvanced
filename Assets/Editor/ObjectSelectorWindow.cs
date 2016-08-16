@@ -35,6 +35,7 @@ public class ObjectSelectorWindow : EditorWindow
         public string name;
         public Texture icon;
         public string path;
+        public int id;
     }
 
     private Styles m_Styles;
@@ -115,10 +116,10 @@ public class ObjectSelectorWindow : EditorWindow
     /// <param name="obj">初始的对象</param>
     /// <param name="itemSelectedCallback">列表项选中回调</param>
     /// <param name="folderPath">所属的文件夹路径</param>
-    public static void ShowObjectPicker<T>(UnityEngine.Object obj, Action<UnityEngine.Object> itemSelectedCallback, string folderPath = "Assets") where T : UnityEngine.Object
+    public static void ShowObjectPicker<T>(UnityEngine.Object obj, Action<UnityEngine.Object> itemSelectedCallback, string folderPath = "Assets", List<int> allowedInstanceIDs = null) where T : UnityEngine.Object
     {
         Type typeFromHandle = typeof(T);
-        get.Show(obj, typeFromHandle, null, itemSelectedCallback, folderPath);
+        get.Show(obj, typeFromHandle, null, itemSelectedCallback, folderPath, allowedInstanceIDs);
     }
 
     public static void ShowObjectPicker(SerializedProperty property, Action<UnityEngine.Object> itemSelectedCallback, string folderPath = "Assets")
@@ -126,7 +127,7 @@ public class ObjectSelectorWindow : EditorWindow
         get.Show(null, null, property, itemSelectedCallback, folderPath);
     }
 
-    public void Show(UnityEngine.Object obj, Type requiredType, SerializedProperty property, Action<UnityEngine.Object> itemSelectedCallback, string folderPath)
+    public void Show(UnityEngine.Object obj, Type requiredType, SerializedProperty property, Action<UnityEngine.Object> itemSelectedCallback, string folderPath, List<int> allowedInstanceIDs = null)
     {
         m_FolderPath = folderPath;
         if (!Directory.Exists(folderFullPath))
@@ -147,7 +148,7 @@ public class ObjectSelectorWindow : EditorWindow
         {
             requiredTypeName = requiredType.Name;
         }
-        InitBuiltinList(requiredTypeName);
+        InitBuiltinList(requiredTypeName, allowedInstanceIDs);
         titleContent = new GUIContent("Select " + requiredTypeName);
         m_FocusSearchFilter = true;
         m_ShowNoneItem = true;
@@ -160,19 +161,39 @@ public class ObjectSelectorWindow : EditorWindow
     /// 初始化所指定的文件夹路径里的对象列表
     /// </summary>
     /// <param name="requiredType"></param>
-    private void InitBuiltinList(string requiredTypeName)
+    private void InitBuiltinList(string requiredTypeName, List<int> allowedInstanceIDs)
     {
         int lenFolderPath = m_FolderPath.Length + 1;
         List<BuiltinRes> builtinResList = new List<BuiltinRes>();
-        string[] guids = AssetDatabase.FindAssets("t:" + requiredTypeName, new[] { m_FolderPath });
-        foreach (var guid in guids)
+
+        if (allowedInstanceIDs == null)
         {
-            BuiltinRes builtinRes = new BuiltinRes();
-            string assetPath = AssetDatabase.GUIDToAssetPath(guid);
-            builtinRes.name = assetPath.Substring(lenFolderPath, assetPath.LastIndexOf('.') - lenFolderPath);
-            builtinRes.icon = AssetDatabase.GetCachedIcon(assetPath);
-            builtinRes.path = assetPath;
-            builtinResList.Add(builtinRes);
+            string[] guids = AssetDatabase.FindAssets("t:" + requiredTypeName, new[] { m_FolderPath });
+            foreach (var guid in guids)
+            {
+                BuiltinRes builtinRes = new BuiltinRes();
+                string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                builtinRes.name = assetPath.Substring(lenFolderPath, assetPath.LastIndexOf('.') - lenFolderPath);
+                builtinRes.icon = AssetDatabase.GetCachedIcon(assetPath);
+                builtinRes.path = assetPath;
+                builtinResList.Add(builtinRes);
+            }
+        }
+        else
+        {
+            foreach (var allowedInstanceID in allowedInstanceIDs)
+            {
+                string assetPath = AssetDatabase.GetAssetPath(allowedInstanceID);
+                UnityEngine.Object obj = EditorUtility.InstanceIDToObject(allowedInstanceID);
+                bool isSub = AssetDatabase.IsSubAsset(allowedInstanceID);
+                string assetName = isSub ? obj.name : assetPath.Substring(lenFolderPath, assetPath.LastIndexOf('.') - lenFolderPath);
+                BuiltinRes builtinRes = new BuiltinRes();
+                builtinRes.name = assetName;
+                builtinRes.icon = isSub ? AssetPreview.GetMiniThumbnail(obj) : AssetDatabase.GetCachedIcon(assetPath);
+                builtinRes.path = assetPath;
+                builtinRes.id = allowedInstanceID;
+                builtinResList.Add(builtinRes);
+            }
         }
 
         m_CurrentBuiltinResources = m_ActiveBuiltinList = builtinResList.ToArray();
@@ -569,7 +590,14 @@ public class ObjectSelectorWindow : EditorWindow
             {
                 selectedIdx--;
             }
-            m_LastSelectedObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(m_ActiveBuiltinList[selectedIdx].path);
+            if (m_ActiveBuiltinList[selectedIdx].id > 0)
+            {
+                m_LastSelectedObject = EditorUtility.InstanceIDToObject(m_ActiveBuiltinList[selectedIdx].id);
+            }
+            else
+            {
+                m_LastSelectedObject = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(m_ActiveBuiltinList[selectedIdx].path);
+            }
             m_LastSelectedObjectIcon = AssetPreview.GetAssetPreview(m_LastSelectedObject);
 
             if (m_EditorCache != null && m_LastSelectedObject)

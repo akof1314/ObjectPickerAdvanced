@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 
@@ -12,6 +13,7 @@ public class TestInspector : Editor
     private SerializedProperty person;
     private SerializedProperty person2;
     private SerializedProperty person3;
+    private SerializedProperty person4;
 
     private double m_TimeNow = -1;
 
@@ -21,6 +23,7 @@ public class TestInspector : Editor
         person = targetObj.FindProperty("person");
         person2 = targetObj.FindProperty("person2");
         person3 = targetObj.FindProperty("person3");
+        person4 = targetObj.FindProperty("person4");
     }
 
     public override void OnInspectorGUI()
@@ -34,6 +37,7 @@ public class TestInspector : Editor
 
         EditorGUILayout.PropertyField(person2);
         EditorGUILayout.PropertyField(person3);
+        EditorGUILayout.PropertyField(person4);
         if (GUILayout.Button("选择对象"))
         {
             ObjectSelectorWindow.ShowObjectPicker<GameObject>(person.objectReferenceValue, OnObjectPicker1, "Assets/AC");
@@ -53,6 +57,20 @@ public class TestInspector : Editor
             EditorGUIUtility.ShowObjectPicker<GameObject>(person.objectReferenceValue, false, String.Empty, 0);
             EditorApplication.update += updaterShow;
         }
+        if (GUILayout.Button("选择对象5"))
+        {
+            GameObject go =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    "Assets/Standard Assets/Characters/ThirdPersonCharacter/Prefabs/ThirdPersonController.prefab");
+
+            AnimationClip[] clips = AnimationUtility.GetAnimationClips(go);
+            List<int> ids = new List<int>();
+            foreach (var clip in clips)
+            {
+                ids.Add(clip.GetInstanceID());
+            }
+            ObjectSelectorWindow.ShowObjectPicker<AnimationClip>(person4.objectReferenceValue, OnObjectPicker4, "Assets/Standard Assets/Characters/ThirdPersonCharacter/Animation", ids);
+        }
         targetObj.ApplyModifiedProperties();
     }
 
@@ -65,6 +83,12 @@ public class TestInspector : Editor
     private void OnObjectPicker3(UnityEngine.Object obj)
     {
         person3.objectReferenceValue = obj;
+        targetObj.ApplyModifiedProperties();
+    }
+
+    private void OnObjectPicker4(UnityEngine.Object obj)
+    {
+        person4.objectReferenceValue = obj;
         targetObj.ApplyModifiedProperties();
     }
 
