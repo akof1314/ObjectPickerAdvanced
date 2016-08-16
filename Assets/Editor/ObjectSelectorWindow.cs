@@ -122,6 +122,20 @@ public class ObjectSelectorWindow : EditorWindow
         get.Show(obj, typeFromHandle, null, itemSelectedCallback, folderPath, allowedInstanceIDs);
     }
 
+    public static void ShowObjectPicker<T>(UnityEngine.Object obj, Action<UnityEngine.Object> itemSelectedCallback, string folderPath, UnityEngine.Object[] allowedInstanceObjects) where T : UnityEngine.Object
+    {
+        List<int> allowedInstanceIDs = null;
+        if (allowedInstanceObjects != null)
+        {
+            allowedInstanceIDs = new List<int>(allowedInstanceObjects.Length);
+            foreach (var allowedInstanceObject in allowedInstanceObjects)
+            {
+                allowedInstanceIDs.Add(allowedInstanceObject.GetInstanceID());
+            }
+        }
+        ShowObjectPicker<T>(obj, itemSelectedCallback, folderPath, allowedInstanceIDs);
+    }
+
     public static void ShowObjectPicker(SerializedProperty property, Action<UnityEngine.Object> itemSelectedCallback, string folderPath = "Assets")
     {
         get.Show(null, null, property, itemSelectedCallback, folderPath);
@@ -540,7 +554,9 @@ public class ObjectSelectorWindow : EditorWindow
     private void ResizeBottomPartOfWindow()
     {
         GUI.changed = false;
-        m_PreviewSize = m_PreviewResizer.ResizeHandle(base.position, 65f, 270f, 20f) + 20f;
+        float x = 5f + m_PreviewSize - 5f * 2f;
+        Rect dragRect = new Rect(x, 0, base.position.width - x, 0f);
+        m_PreviewSize = m_PreviewResizer.ResizeHandle(base.position, 65f, 270f, 20f, dragRect) + 20f;
         m_TopSize = base.position.height - m_PreviewSize;
     }
 
