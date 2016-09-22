@@ -32,32 +32,28 @@ public class TestInspector : Editor
 
         EditorGUILayout.BeginHorizontal();
         EditorGUILayout.PropertyField(person);
-        EditorGUIUtil.ObjectPickerField(person);
+        EditorGUIUtil.ObjectPickerField(person, null, "Assets/AC");
         EditorGUILayout.EndHorizontal();
 
+        EditorGUILayout.BeginHorizontal();
         EditorGUILayout.PropertyField(person2);
-        EditorGUILayout.PropertyField(person3);
-        EditorGUILayout.PropertyField(person4);
-        if (GUILayout.Button("选择对象"))
-        {
-            ObjectSelectorWindow.ShowObjectPicker<GameObject>(person.objectReferenceValue, OnObjectPicker1, "Assets/AC");
-        }
-        if (GUILayout.Button("选择对象2"))
+        if (GUILayout.Button("C", EditorStyles.miniButton, GUILayout.Width(24f)))
         {
             ObjectSelectorWindow.ShowObjectPicker<Sprite>(person.objectReferenceValue, OnObjectPicker, "Assets");
         }
+        EditorGUILayout.EndHorizontal();
 
-        if (GUILayout.Button("选择对象3"))
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.PropertyField(person3);
+        if (GUILayout.Button("C", EditorStyles.miniButton, GUILayout.Width(24f)))
         {
             ObjectSelectorWindow.ShowObjectPicker<AudioClip>(person3.objectReferenceValue, OnObjectPicker3, "Assets/Sound");
         }
+        EditorGUILayout.EndHorizontal();
 
-        if (GUILayout.Button("选择对象4"))
-        {
-            EditorGUIUtility.ShowObjectPicker<GameObject>(person.objectReferenceValue, false, String.Empty, 0);
-            EditorApplication.update += updaterShow;
-        }
-        if (GUILayout.Button("选择对象5"))
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.PropertyField(person4);
+        if (GUILayout.Button("C", EditorStyles.miniButton, GUILayout.Width(24f)))
         {
             GameObject go =
                 AssetDatabase.LoadAssetAtPath<GameObject>(
@@ -71,6 +67,8 @@ public class TestInspector : Editor
             }
             ObjectSelectorWindow.ShowObjectPicker<AnimationClip>(person4.objectReferenceValue, OnObjectPicker4, "Assets/Standard Assets/Characters/ThirdPersonCharacter/Animation", ids);
         }
+        EditorGUILayout.EndHorizontal();
+
         targetObj.ApplyModifiedProperties();
     }
 
@@ -102,46 +100,5 @@ public class TestInspector : Editor
         {
             Debug.Log("点中了空");
         }
-    }
-
-    private void updaterShow()
-    {
-        Debug.Log(1);
-        if (m_TimeNow < 0)
-        {
-            m_TimeNow = EditorApplication.timeSinceStartup + 3f;
-        }
-        if (m_TimeNow <= EditorApplication.timeSinceStartup)
-        {
-            EditorApplication.update -= updaterShow;
-            Debug.Log(2);
-            ShowPicker();
-        }
-    }
-
-    private void ShowPicker()
-    {
-        string m_RequiredType = typeof (Sprite).Name;
-        Assembly assembly = Assembly.GetAssembly(typeof(EditorGUIUtility));
-        Type typeObjectSelector = assembly.GetType("UnityEditor.ObjectSelector");
-        PropertyInfo get = typeObjectSelector.GetProperty("get", BindingFlags.Static | BindingFlags.Public | BindingFlags.GetProperty);
-        FieldInfo listAreaInfo = typeObjectSelector.GetField("m_ListArea", BindingFlags.GetField | BindingFlags.Instance | BindingFlags.NonPublic);
-        PropertyInfo listPositionInfo = typeObjectSelector.GetProperty("listPosition",
-            BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.NonPublic);
-        EditorWindow objectSelector = get.GetValue(null, null) as EditorWindow;
-        object listArea = listAreaInfo.GetValue(objectSelector);
-        object listPosition = listPositionInfo.GetValue(objectSelector, null);
-
-        Type typeSearchFilter = assembly.GetType("UnityEditor.SearchFilter");
-        object searchFilter = Activator.CreateInstance(typeSearchFilter);
-        MethodInfo searchFieldStringToFilter = typeSearchFilter.GetMethod("SearchFieldStringToFilter",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-        PropertyInfo classNames = typeSearchFilter.GetProperty("classNames",
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty);
-        classNames.SetValue(searchFilter, new string[] { m_RequiredType }, null);
-
-        Type typeObjectListArea = assembly.GetType("UnityEditor.ObjectListArea");
-        MethodInfo initInfo = typeObjectListArea.GetMethod("Init", BindingFlags.Instance | BindingFlags.Public);
-        initInfo.Invoke(listArea, new object[] { listPosition, HierarchyType.Assets, searchFilter, true });
     }
 }
